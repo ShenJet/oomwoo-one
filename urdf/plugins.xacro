@@ -113,4 +113,48 @@
       <visualize>true</visualize>
     </sensor>
   </gazebo>
+
+  <!-- Left/right side distance sensors: a single ray straight out to the side,
+       modelling a short-range IR/ToF wall sensor. gz-sim publishes gz.msgs.LaserScan
+       (one beam) on <topic>, which config/gz_bridge.yaml bridges to sensor_msgs/
+       LaserScan. Attached to the sensor link (see robot.urdf.xacro); like the
+       gpu_lidar above, gz honours <topic> (unlike the contact sensors). -->
+  <xacro:macro name="side_range_plugin" params="prefix side_sign">
+    <gazebo reference="base_link">
+      <sensor name="${prefix}" type="gpu_lidar">
+        <!-- Pose baked relative to base_link (the canonical link, unaffected by
+             fixed-joint lumping) so the ray aim does not depend on the lumped
+             sensor-link frame orientation. Matches the ${prefix}_link URDF joint. -->
+        <pose relative_to="base_link">${range_sensor_x} ${side_sign * base_diameter/2} ${range_sensor_z} 0 0 ${side_sign * range_sensor_angle_deg * DEG2RAD}</pose>
+        <update_rate>${range_sensor_update_rate}</update_rate>
+        <topic>${prefix}</topic>
+        <gz_frame_id>${prefix}_link</gz_frame_id>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>${range_sensor_samples}</samples>
+              <resolution>1</resolution>
+              <min_angle>${-range_sensor_fov_deg/2 * DEG2RAD}</min_angle>
+              <max_angle>${ range_sensor_fov_deg/2 * DEG2RAD}</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>${range_sensor_min}</min>
+            <max>${range_sensor_max}</max>
+            <resolution>${range_sensor_resolution}</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.005</stddev>
+          </noise>
+        </ray>
+        <always_on>1</always_on>
+        <visualize>true</visualize>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:side_range_plugin prefix="range_left" side_sign="1"/>
+  <xacro:side_range_plugin prefix="range_right" side_sign="-1"/>
 </robot>

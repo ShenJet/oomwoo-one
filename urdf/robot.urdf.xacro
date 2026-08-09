@@ -38,6 +38,30 @@
     </xacro:if>
   </xacro:macro>
 
+  <!-- One side distance sensor: a small link on the body side edge whose +X axis
+       (the single ray's direction) is aimed outward. side_sign = +1 left (+Y),
+       -1 right (-Y); range_sensor_angle_deg is measured from forward (90 = straight
+       out). The matching gpu_lidar sensor is in plugins.xacro. -->
+  <xacro:macro name="side_range_sensor" params="prefix side_sign">
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${prefix}_link"/>
+      <origin xyz="${range_sensor_x} ${side_sign * base_diameter/2} ${range_sensor_z}"
+              rpy="0 0 ${side_sign * range_sensor_angle_deg * DEG2RAD}"/>
+    </joint>
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${range_sensor_size} ${range_sensor_size} ${range_sensor_size}"/>
+        </geometry>
+        <material name="dark"/>
+      </visual>
+      <xacro:solid_box_inertia m="${range_sensor_mass}"
+        x="${range_sensor_size}" y="${range_sensor_size}" z="${range_sensor_size}"/>
+    </link>
+  </xacro:macro>
+
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
@@ -183,5 +207,9 @@
 
     <xacro:solid_cylinder_inertia m="${laser_puck_mass}" r="${laser_puck_diameter/2}" h="${laser_puck_height}"/>
   </link>
+
+  <!-- Left/right side distance sensors (short-range wall sensors) -->
+  <xacro:side_range_sensor prefix="range_left" side_sign="1"/>
+  <xacro:side_range_sensor prefix="range_right" side_sign="-1"/>
 
 </robot>

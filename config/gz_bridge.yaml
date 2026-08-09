@@ -61,3 +61,19 @@
   ros_type_name: "ros_gz_interfaces/msg/Contacts"
   gz_type_name: "gz.msgs.Contacts"
   direction: GZ_TO_ROS
+
+# Side distance sensors (single-ray gpu_lidar -> ROS). Sim representation of the
+# short-range side wall sensors; on the physical robot these are ToF distance
+# sensors (vacuum_ros2_bridge, sensor_msgs/Range). gz honours the sensor <topic>,
+# so the gz topic is the plain name set in urdf/plugins.xacro.
+- ros_topic_name: "range_left"
+  gz_topic_name: "range_left"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "range_right"
+  gz_topic_name: "range_right"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
