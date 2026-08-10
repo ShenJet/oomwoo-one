@@ -157,4 +157,78 @@
 
   <xacro:side_range_plugin prefix="range_left" side_sign="1"/>
   <xacro:side_range_plugin prefix="range_right" side_sign="-1"/>
+
+  <!-- Front multizone ToF depth sensor: a 16 (= 8 + 8) x 8 gpu_lidar ray grid over
+       120 deg H x 60 deg V, front & center, modelling two VL53L7CX (each 8x8, 60
+       deg) aimed +/-30 deg. gz publishes a gz.msgs.PointCloudPacked on tof_front/
+       points, which config/gz_bridge.yaml bridges to sensor_msgs/PointCloud2. -->
+  <gazebo reference="tof_front_link">
+    <sensor name="tof_front" type="gpu_lidar">
+      <pose relative_to="tof_front_link">0 0 0 0 0 0</pose>
+      <update_rate>${tof_front_update_rate}</update_rate>
+      <topic>tof_front</topic>
+      <gz_frame_id>tof_front_link</gz_frame_id>
+      <ray>
+        <scan>
+          <horizontal>
+            <samples>${tof_front_h_samples}</samples>
+            <resolution>1</resolution>
+            <min_angle>${-tof_front_hfov_deg/2 * DEG2RAD}</min_angle>
+            <max_angle>${ tof_front_hfov_deg/2 * DEG2RAD}</max_angle>
+          </horizontal>
+          <vertical>
+            <samples>${tof_front_v_samples}</samples>
+            <resolution>1</resolution>
+            <min_angle>${-tof_front_vfov_deg/2 * DEG2RAD}</min_angle>
+            <max_angle>${ tof_front_vfov_deg/2 * DEG2RAD}</max_angle>
+          </vertical>
+        </scan>
+        <range>
+          <min>${tof_front_min}</min>
+          <max>${tof_front_max}</max>
+          <resolution>${tof_front_resolution}</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.005</stddev>
+        </noise>
+      </ray>
+      <always_on>1</always_on>
+      <visualize>true</visualize>
+    </sensor>
+  </gazebo>
+
+  <!-- One front RGB camera (OV5647-equivalent), VGA, wide FoV. gz publishes
+       gz.msgs.Image on <topic> and gz.msgs.CameraInfo on the sibling camera_info
+       topic (the /image suffix -> /camera_info); config/gz_bridge.yaml bridges both.
+       The image is stamped in the ROS optical frame. -->
+  <xacro:macro name="camera_plugin" params="side">
+    <gazebo reference="camera_${side}_link">
+      <sensor name="camera_${side}" type="camera">
+        <pose relative_to="camera_${side}_link">0 0 0 0 0 0</pose>
+        <update_rate>${camera_update_rate}</update_rate>
+        <topic>camera_${side}/image</topic>
+        <gz_frame_id>camera_${side}_optical_frame</gz_frame_id>
+        <camera>
+          <horizontal_fov>${camera_hfov_deg * DEG2RAD}</horizontal_fov>
+          <image>
+            <width>${camera_width}</width>
+            <height>${camera_height}</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>${camera_near}</near>
+            <far>${camera_far}</far>
+          </clip>
+          <optical_frame_id>camera_${side}_optical_frame</optical_frame_id>
+        </camera>
+        <always_on>1</always_on>
+        <visualize>true</visualize>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:camera_plugin side="left"/>
+  <xacro:camera_plugin side="right"/>
 </robot>

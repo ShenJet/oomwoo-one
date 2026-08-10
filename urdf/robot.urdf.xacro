@@ -62,6 +62,57 @@
     </link>
   </xacro:macro>
 
+  <!-- Front multizone ToF: a small forward-facing link at body mid-height, front
+       center. Its +X is the depth-grid boresight; the 16x8 ray sensor is in
+       plugins.xacro. Visual is a wide box hinting at the two ToF modules. -->
+  <xacro:macro name="front_tof_sensor">
+    <joint name="tof_front_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="tof_front_link"/>
+      <origin xyz="${tof_front_x} 0 ${tof_front_z}" rpy="0 0 0"/>
+    </joint>
+    <link name="tof_front_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${tof_front_size} ${2*tof_front_size} ${tof_front_size}"/>
+        </geometry>
+        <material name="dark"/>
+      </visual>
+      <xacro:solid_box_inertia m="${tof_front_mass}"
+        x="${tof_front_size}" y="${2*tof_front_size}" z="${tof_front_size}"/>
+    </link>
+  </xacro:macro>
+
+  <!-- One front RGB camera flanking the ToF, plus a ROS optical frame (REP-103:
+       x right, y down, z forward) the image is published in. side_sign = +1 left
+       (+Y), -1 right (-Y). The gz camera sensor is in plugins.xacro. -->
+  <xacro:macro name="stereo_camera" params="side side_sign">
+    <joint name="camera_${side}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="camera_${side}_link"/>
+      <origin xyz="${camera_x} ${side_sign * camera_baseline/2} ${camera_z}"
+              rpy="0 0 0"/>
+    </joint>
+    <link name="camera_${side}_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${camera_size} ${camera_size} ${camera_size}"/>
+        </geometry>
+        <material name="dark"/>
+      </visual>
+      <xacro:solid_box_inertia m="${camera_mass}"
+        x="${camera_size}" y="${camera_size}" z="${camera_size}"/>
+    </link>
+    <joint name="camera_${side}_optical_joint" type="fixed">
+      <parent link="camera_${side}_link"/>
+      <child link="camera_${side}_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+    <link name="camera_${side}_optical_frame"/>
+  </xacro:macro>
+
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
@@ -211,5 +262,12 @@
   <!-- Left/right side distance sensors (short-range wall sensors) -->
   <xacro:side_range_sensor prefix="range_left" side_sign="1"/>
   <xacro:side_range_sensor prefix="range_right" side_sign="-1"/>
+
+  <!-- Front multizone ToF depth sensor (front & center) -->
+  <xacro:front_tof_sensor/>
+
+  <!-- Front stereo cameras, flanking the ToF left/right -->
+  <xacro:stereo_camera side="left" side_sign="1"/>
+  <xacro:stereo_camera side="right" side_sign="-1"/>
 
 </robot>

@@ -74,5 +74,43 @@
   <xacro:property name="range_sensor_samples" value="3"/>         <!-- rays across the FOV (2 or more) -->
   <xacro:property name="range_sensor_fov_deg" value="1.0"/>       <!-- total beam FOV (deg) -->
 
+  <!-- ****************** FRONT DISTANCE SENSOR (multizone ToF) ****************** -->
+  <!-- Front-facing depth grid, front & center. Models TWO VL53L7CX multizone ToF
+       sensors (each 8x8 zones, 60 deg horizontal FoV) mounted one aimed 30 deg left
+       and one 30 deg right, so together they span 120 deg. Represented as ONE
+       gpu_lidar with a 16 (= 8 + 8) x 8 ray grid over 120 deg H x 60 deg V, where
+       each ray is a zone distance. Published as a PointCloud2 (128 points); on the
+       physical robot these are per-zone ToF ranges. All values tunable. -->
+  <xacro:property name="tof_front_h_samples" value="16"/>          <!-- 8 + 8 zones across -->
+  <xacro:property name="tof_front_v_samples" value="8"/>           <!-- 8 zones tall -->
+  <xacro:property name="tof_front_hfov_deg" value="120.0"/>        <!-- 2 x 60 deg -->
+  <xacro:property name="tof_front_vfov_deg" value="60.0"/>         <!-- one sensor's vertical FoV -->
+  <xacro:property name="tof_front_min" value="0.02"/>              <!-- m -->
+  <xacro:property name="tof_front_max" value="4.0"/>               <!-- m: VL53L7CX long range -->
+  <xacro:property name="tof_front_resolution" value="0.005"/>      <!-- m -->
+  <xacro:property name="tof_front_update_rate" value="15"/>        <!-- Hz -->
+  <xacro:property name="tof_front_x" value="${base_diameter/2}"/>  <!-- front surface -->
+  <xacro:property name="tof_front_z" value="${lower_cylinder_height/2}"/> <!-- mid-height -->
+  <xacro:property name="tof_front_size" value="0.012"/>            <!-- visual cube edge (m) -->
+  <xacro:property name="tof_front_mass" value="0.005"/>            <!-- kg, negligible -->
+
+  <!-- ****************** FRONT STEREO CAMERAS (OV5647) ****************** -->
+  <!-- Two RGB cameras, front & center, flanking the ToF sensor left/right, for
+       obstacle recognition and future stereo depth. VGA, wide FoV. The stereo base
+       is small on purpose (we only need coarse obstacle depth). URDF + camera topics
+       only for now, no stereo processing yet. Each has a REP-103 optical frame
+       (z-forward, x-right, y-down) that the image is published in. Tunable. -->
+  <xacro:property name="camera_width" value="640"/>                <!-- VGA -->
+  <xacro:property name="camera_height" value="480"/>
+  <xacro:property name="camera_hfov_deg" value="120.0"/>
+  <xacro:property name="camera_near" value="0.02"/>                <!-- m -->
+  <xacro:property name="camera_far" value="10.0"/>                 <!-- m -->
+  <xacro:property name="camera_update_rate" value="15"/>           <!-- Hz -->
+  <xacro:property name="camera_baseline" value="0.05"/>            <!-- m: compact stereo base -->
+  <xacro:property name="camera_x" value="${base_diameter/2}"/>     <!-- front surface -->
+  <xacro:property name="camera_z" value="${lower_cylinder_height/2}"/> <!-- mid-height, flanking the ToF -->
+  <xacro:property name="camera_size" value="0.010"/>               <!-- visual cube edge (m) -->
+  <xacro:property name="camera_mass" value="0.005"/>               <!-- kg, negligible -->
+
   <xacro:property name="DEG2RAD" value="0.0174533"/>
 </robot>
