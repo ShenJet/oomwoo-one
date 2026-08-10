@@ -3,6 +3,20 @@
 <!-- Turtlebot3 Jazzy https://emanual.robotis.com/docs/en/platform/turtlebot3/simulation/ -->
 <!-- Build URDF xacro robot.urdf.xacro -->
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- BOTH odom sources are always published, so a later node can diff them to
+       measure wheel slip. odom_source only picks which one owns the CANONICAL
+       /odom + /tf (odom to base_footprint) that the stack uses:
+         * truth (default): ground truth owns /odom + /tf; wheel odom is on
+           /odom_wheel.
+         * wheel: wheel odom owns /odom + /tf; ground truth is on /odom_truth.
+       Ground truth is the true model pose (slip free: a slipping or blocked wheel
+       does NOT move it). Wheel odometry is integrated from the actual wheel joint
+       rotation like real encoders, so slip shows up as drift. The non-canonical
+       source always lands on a fixed /odom_wheel or /odom_truth topic. Default
+       (truth) keeps /odom + /tf identical to before, so nothing downstream breaks;
+       set odom_source:=wheel at spawn time (e.g. world.launch.py) to swap. -->
+  <xacro:arg name="odom_source" default="truth"/>
+
   <gazebo>
     <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
       <left_joint>wheel_left_joint</left_joint>
@@ -11,15 +25,37 @@
       <wheel_radius>${wheel_diameter/2}</wheel_radius>
       <max_linear_acceleration>${max_linear_acceleration}</max_linear_acceleration>
       <topic>cmd_vel</topic>
+      <!-- Wheel-encoder odometry, always published. It owns /odom (+ /tf) only when
+           selected; otherwise it goes to /odom_wheel for slip comparison and leaves
+           /tf to the ground-truth publisher. -->
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint</child_frame_id>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <xacro:if value="${'$(arg odom_source)' == 'wheel'}">
+        <odom_topic>/odom</odom_topic>
+        <tf_topic>/tf</tf_topic>
+      </xacro:if>
+      <xacro:unless value="${'$(arg odom_source)' == 'wheel'}">
+        <odom_topic>/odom_wheel</odom_topic>
+      </xacro:unless>
     </plugin>
 
     <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <!-- Ground-truth (true model pose) odometry, always published. Owns /odom
+           (+ /tf) when selected; otherwise /odom_truth, with its TF sent to an
+           unbridged topic so the wheel odom owns /tf. -->
       <odom_frame>odom</odom_frame>
       <robot_base_frame>base_footprint</robot_base_frame>
       <odom_publish_frequency>50</odom_publish_frequency>
-      <odom_topic>/odom</odom_topic>
-      <tf_topic>/tf</tf_topic>
       <dimensions>2</dimensions>
+      <xacro:if value="${'$(arg odom_source)' == 'wheel'}">
+        <odom_topic>/odom_truth</odom_topic>
+        <tf_topic>tf_truth</tf_topic>
+      </xacro:if>
+      <xacro:unless value="${'$(arg odom_source)' == 'wheel'}">
+        <odom_topic>/odom</odom_topic>
+        <tf_topic>/tf</tf_topic>
+      </xacro:unless>
     </plugin>
 
     <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
