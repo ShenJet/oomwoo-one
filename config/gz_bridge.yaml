@@ -13,8 +13,8 @@
   direction: GZ_TO_ROS
 
 # IMU (gz imu sensor -> ROS). Needs the world-level gz-sim-imu-system (see
-# urdf/plugins.xacro). Orientation disabled -> gyro + accel only, matching the
-# physical robot's IMU; config/ekf.yaml fuses the yaw rate.
+# urdf/plugins.xacro). Orientation enabled in sim (true attitude); the physical
+# gyro has none. IMU fusion is off in config/ekf.yaml for now.
 - ros_topic_name: "imu"
   gz_topic_name: "imu"
   ros_type_name: "sensor_msgs/msg/Imu"

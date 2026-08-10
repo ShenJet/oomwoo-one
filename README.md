@@ -85,7 +85,7 @@ gz sensors are defined in `urdf/plugins.xacro` and bridged to ROS 2 by
 | Front multizone ToF | `/tof_front/points` | `sensor_msgs/PointCloud2` | 16×8 depth grid, 120°H × 60°V, 0.02–4 m — models two VL53L7CX (each 8×8, 60°) at ±30° | `tof_front_link` |
 | Front stereo cameras L / R | `/camera_left/image`, `/camera_right/image` (+ `…/camera_info`) | `sensor_msgs/Image`, `CameraInfo` | RGB, VGA 640×480, 120° HFoV, ~50 mm base (OV5647-equivalent) | `camera_{left,right}_optical_frame` |
 | Front bumpers L / R | `/bumper_left/contact`, `/bumper_right/contact` | `ros_gz_interfaces/Contacts` | front 180° contact arc; **non-empty `contacts` = pressed** | `base_link` |
-| IMU (gyro + accel) | `/imu` | `sensor_msgs/Imu` | 6-axis, 100 Hz, near body center; **orientation disabled** — angular-velocity + linear-acceleration only (orientation left unset / zero quaternion), like the gyro+accel hardware IMU | `imu_link` |
+| IMU (gyro + accel) | `/imu` | `sensor_msgs/Imu` | 6-axis, 100 Hz, near body center; angular velocity + linear acceleration + **orientation** (ground-truth attitude; the hardware IMU has none). EKF IMU fusion is off for now | `imu_link` |
 
 > Rendered sensors (LiDAR, side ranges, ToF, cameras) need the sim's GPU render path. On a
 > headless/no-GPU setup they advertise but read empty (`inf`/black) — run with a working GL

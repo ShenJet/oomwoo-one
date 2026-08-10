@@ -270,10 +270,10 @@
 
   <!-- IMU: 6-axis (gyro + accelerometer) at imu_link, near the body center. gz
        publishes gz.msgs.IMU on <topic>, bridged to sensor_msgs/Imu. Orientation
-       is DISABLED so /imu carries angular velocity + linear acceleration only,
-       like the physical robot's IMU (the EKF fuses the yaw rate, config/ekf.yaml).
-       The sim leaves the orientation field unset (a zero quaternion); the hardware
-       bridge instead flags "no orientation" with orientation_covariance[0] = -1.
+       is ENABLED, so /imu also carries the true attitude quaternion. The physical
+       Proscenic gyro reports no absolute orientation, but the sim can and it is
+       handy for development; IMU fusion in the EKF stays OFF for now
+       (config/ekf.yaml), so /imu does not affect the odom->base TF either way.
        Like the contact sensors, this needs the world to load the world-level
        gz-sim-imu-system; oomwoo_gazebo living_room.world and oomwoo_sim_support
        test_room.world both do (an IMU-less world leaves /imu silent). -->
@@ -284,7 +284,7 @@
       <topic>imu</topic>
       <gz_frame_id>imu_link</gz_frame_id>
       <imu>
-        <enable_orientation>false</enable_orientation>
+        <enable_orientation>true</enable_orientation>
         <angular_velocity>
           <x><noise type="gaussian"><mean>0.0</mean><stddev>${imu_gyro_noise}</stddev></noise></x>
           <y><noise type="gaussian"><mean>0.0</mean><stddev>${imu_gyro_noise}</stddev></noise></y>
