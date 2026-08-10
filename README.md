@@ -33,8 +33,10 @@ Tutorials:
   `odom → base_footprint` transform (the bridge publishes the `/odom` topic but not this TF,
   which cartographer requires).
 - `config/cartographer_lds_2d.lua`, `config/navigation.yaml`, … — SLAM / Nav2 tuning.
-- `config/gz_bridge.yaml`, `urdf/plugins.xacro` — Gazebo simulation (diff-drive, odometry,
-  gpu_lidar, and front bumper contact sensors). See
+- `config/gz_bridge.yaml`, `urdf/plugins.xacro` — Gazebo simulation: diff-drive, odometry
+  (ground-truth + wheel), 2D LiDAR, side distance sensors, a front multizone ToF, front
+  stereo cameras, and front bumper contact sensors. See
+  [Simulation: sensors, topics & tuning](#simulation-sensors-topics--tuning) below, and
   [docs/sim-bumpers.md](docs/sim-bumpers.md) for how the simulated bumpers are wired and
   the three gz-sim gotchas that make them easy to break.
 - `launch/bringup.launch.py` — physical bring-up: bridge + `robot_state_publisher` + EKF.
@@ -67,6 +69,104 @@ kaia config robot.ip <robot-ip>
 ros2 launch oomwoo_one bringup.launch.py
 ```
 (Precedence: an explicit `robot_ip:=` wins, otherwise `kaia config robot.ip`, otherwise 192.168.1.143.)
+
+## Simulation: sensors, topics & tuning
+
+Everything below is for the Gazebo sim (`ros2 launch oomwoo_gazebo world.launch.py`). The
+gz sensors are defined in `urdf/plugins.xacro` and bridged to ROS 2 by
+`config/gz_bridge.yaml`; all sizes/optics are tunable params in `urdf/params.xacro`.
+
+### Sensors
+
+| Sensor | ROS topic(s) | Type | Details | Frame |
+|--------|--------------|------|---------|-------|
+| 2D LiDAR (turret) | `/scan` | `sensor_msgs/LaserScan` | 360 samples, 5 Hz, 0.1–10 m | `base_scan` |
+| Side distance L / R | `/range_left`, `/range_right` | `sensor_msgs/LaserScan` | short-range wall sensors aimed straight out (±90°), ~0.02–0.5 m; a real ToF (`sensor_msgs/Range`) on hardware | `range_left_link`, `range_right_link` |
+| Front multizone ToF | `/tof_front/points` | `sensor_msgs/PointCloud2` | 16×8 depth grid, 120°H × 60°V, 0.02–4 m — models two VL53L7CX (each 8×8, 60°) at ±30° | `tof_front_link` |
+| Front stereo cameras L / R | `/camera_left/image`, `/camera_right/image` (+ `…/camera_info`) | `sensor_msgs/Image`, `CameraInfo` | RGB, VGA 640×480, 120° HFoV, ~50 mm base (OV5647-equivalent) | `camera_{left,right}_optical_frame` |
+| Front bumpers L / R | `/bumper_left/contact`, `/bumper_right/contact` | `ros_gz_interfaces/Contacts` | front 180° contact arc; **non-empty `contacts` = pressed** | `base_link` |
+
+> Rendered sensors (LiDAR, side ranges, ToF, cameras) need the sim's GPU render path. On a
+> headless/no-GPU setup they advertise but read empty (`inf`/black) — run with a working GL
+> stack (or `headless:=true` uses software GL, which is slow and may not render depth).
+
+### Odometry, TF & actuation
+
+| Topic | Type | Notes |
+|-------|------|-------|
+| `/odom` | `nav_msgs/Odometry` | **canonical** odometry; `odom_source` picks the stream (below) |
+| `/odom_truth`, `/odom_wheel` | `nav_msgs/Odometry` | the *other* stream, always published for wheel-slip comparison |
+| `/tf`, `/tf_static` | `tf2_msgs/TFMessage` | `odom → base_footprint` (from the selected odom source) + the fixed sensor frames |
+| `/joint_states` | `sensor_msgs/JointState` | wheel joints |
+| `/clock` | `rosgraph_msgs/Clock` | sim time (use `use_sim_time:=true`) |
+| `/cmd_vel` | `geometry_msgs/Twist` | **input** — velocity command to the diff-drive |
+
+**Odometry source switch** — `world.launch.py odom_source:=truth|wheel` selects which odom
+owns `/odom` + `/tf`; both streams always publish so you can diff them to measure slip:
+
+| `odom_source` | `/odom` + `/tf` | wheel odom on | ground-truth odom on |
+|---------------|-----------------|---------------|----------------------|
+| `truth` (default) | ground-truth model pose (slip-free) | `/odom_wheel` | `/odom` |
+| `wheel` | wheel-encoder odom (slip drifts) | `/odom` | `/odom_truth` |
+
+### Viewing the sensors
+
+```bash
+ros2 topic list                              # everything available
+ros2 topic hz /scan                          # confirm a sensor is publishing
+ros2 topic echo /bumper_left/contact         # bumpers (non-empty contacts = pressed)
+ros2 topic echo /range_right                 # side distance
+ros2 run rqt_image_view rqt_image_view       # pick /camera_left/image or /camera_right/image
+ros2 run tf2_tools view_frames               # dump the TF tree to frames.pdf
+# RViz with the shipped config (LiDAR, ToF PointCloud2, cameras, TF):
+ros2 launch oomwoo_bringup monitor_robot.launch.py use_sim_time:=true
+#   or: rviz2 -d "$(ros2 pkg prefix oomwoo_one)/share/oomwoo_one/rviz/gazebo.rviz"
+```
+
+In RViz, add a **LaserScan** on `/scan` (and `/range_*`), a **PointCloud2** on
+`/tof_front/points`, **Image** displays on `/camera_*/image`, and set the fixed frame to
+`odom` (or `map` once localized).
+
+### URDF parameters (`urdf/params.xacro`)
+
+All dimensions, sensor placements and optics are xacro properties — edit and re-launch.
+Grouped as:
+
+| Group | Example params |
+|-------|----------------|
+| Body & drivetrain | `base_diameter`, `wheel_diameter`, `wheel_base`, `lower_cylinder_height`, `caster_*` |
+| Front bumper | `bumper_facets_per_side`, `bumper_thickness`, `bumper_height`, `bumper_z` |
+| Side distance sensors | `range_sensor_{min,max,angle_deg,samples,fov_deg,update_rate,z}` |
+| Front ToF | `tof_front_{h_samples,v_samples,hfov_deg,vfov_deg,min,max,update_rate}` |
+| Stereo cameras | `camera_{width,height,hfov_deg,baseline,near,far,update_rate}` |
+
+Related files: `urdf/robot.urdf.xacro` (links/joints), `urdf/plugins.xacro` (gz plugins +
+sensors), `urdf/inertial.xacro` (mass/inertia macros), `urdf/materials.xacro` (colors).
+
+### `world.launch.py` arguments (package `oomwoo_gazebo`)
+
+`ros2 launch oomwoo_gazebo world.launch.py <arg>:=<value> …`
+
+| Argument | Default | Values | Meaning |
+|----------|---------|--------|---------|
+| `robot_model` | *(empty → `kaia config robot.model`)* | package name | robot description package to spawn |
+| `world` | `living_room.world` | file in `oomwoo_gazebo/worlds` | Gazebo world |
+| `x_pose`, `y_pose` | `-2.0`, `-0.5` | meters | spawn position |
+| `use_sim_time` | `true` | `true`/`false` | use the sim `/clock` |
+| `headless` | `false` | `true`/`false` | server-only, offscreen, software GL (no GUI) |
+| `odom_source` | `truth` | `truth`/`wheel` | which odometry owns `/odom` + `/tf` (see above) |
+
+### Frame tree
+
+```
+map → odom → base_footprint → base_link → base_scan            (2D LiDAR)
+                                        → wheel_left_link / wheel_right_link / caster_link
+                                        → range_left_link / range_right_link
+                                        → tof_front_link
+                                        → camera_{left,right}_link → camera_{left,right}_optical_frame
+```
+`map → odom` comes from AMCL (localization); `odom → base_footprint` from the selected odom
+source; the rest are fixed frames from `robot_state_publisher`.
 
 ## Notes
 - URDF dimensions are approximate (~349 mm diameter, ~95 mm height, 0.233 m wheel base to
