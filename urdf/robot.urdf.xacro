@@ -270,4 +270,22 @@
   <xacro:stereo_camera side="left" side_sign="1"/>
   <xacro:stereo_camera side="right" side_sign="-1"/>
 
+  <!-- IMU (gyro + accelerometer), near the body center -->
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="${imu_x} ${imu_y} ${imu_z}" rpy="0 0 0"/>
+  </joint>
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${imu_size} ${imu_size} ${imu_size}"/>
+      </geometry>
+      <material name="orange"/>
+    </visual>
+    <xacro:solid_box_inertia m="${imu_mass}"
+      x="${imu_size}" y="${imu_size}" z="${imu_size}"/>
+  </link>
+
 </robot>

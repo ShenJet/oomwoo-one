@@ -112,5 +112,19 @@
   <xacro:property name="camera_size" value="0.010"/>               <!-- visual cube edge (m) -->
   <xacro:property name="camera_mass" value="0.005"/>               <!-- kg, negligible -->
 
+  <!-- ****************** IMU ****************** -->
+  <!-- 6-axis IMU (gyro + accelerometer) near the body center, mirroring the
+       physical robot's board IMU. Orientation is DISABLED (see plugins.xacro) so
+       /imu carries only angular_velocity + linear_acceleration, exactly like the
+       SangamIO/Proscenic gyro the EKF expects (config/ekf.yaml). Tunable. -->
+  <xacro:property name="imu_x" value="0.0"/>
+  <xacro:property name="imu_y" value="0.0"/>
+  <xacro:property name="imu_z" value="${lower_cylinder_height/2}"/> <!-- body mid-height -->
+  <xacro:property name="imu_update_rate" value="100"/>             <!-- Hz -->
+  <xacro:property name="imu_gyro_noise" value="0.0002"/>           <!-- rad/s stddev (MEMS-ish) -->
+  <xacro:property name="imu_accel_noise" value="0.017"/>           <!-- m/s^2 stddev -->
+  <xacro:property name="imu_size" value="0.010"/>                  <!-- visual cube edge (m) -->
+  <xacro:property name="imu_mass" value="0.005"/>                  <!-- kg, negligible -->
+
   <xacro:property name="DEG2RAD" value="0.0174533"/>
 </robot>

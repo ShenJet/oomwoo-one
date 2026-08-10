@@ -85,6 +85,7 @@ gz sensors are defined in `urdf/plugins.xacro` and bridged to ROS 2 by
 | Front multizone ToF | `/tof_front/points` | `sensor_msgs/PointCloud2` | 16×8 depth grid, 120°H × 60°V, 0.02–4 m — models two VL53L7CX (each 8×8, 60°) at ±30° | `tof_front_link` |
 | Front stereo cameras L / R | `/camera_left/image`, `/camera_right/image` (+ `…/camera_info`) | `sensor_msgs/Image`, `CameraInfo` | RGB, VGA 640×480, 120° HFoV, ~50 mm base (OV5647-equivalent) | `camera_{left,right}_optical_frame` |
 | Front bumpers L / R | `/bumper_left/contact`, `/bumper_right/contact` | `ros_gz_interfaces/Contacts` | front 180° contact arc; **non-empty `contacts` = pressed** | `base_link` |
+| IMU (gyro + accel) | `/imu` | `sensor_msgs/Imu` | 6-axis, 100 Hz, near body center; **orientation disabled** — angular-velocity + linear-acceleration only (orientation left unset / zero quaternion), like the gyro+accel hardware IMU | `imu_link` |
 
 > Rendered sensors (LiDAR, side ranges, ToF, cameras) need the sim's GPU render path. On a
 > headless/no-GPU setup they advertise but read empty (`inf`/black) — run with a working GL
@@ -139,6 +140,7 @@ Grouped as:
 | Side distance sensors | `range_sensor_{min,max,angle_deg,samples,fov_deg,update_rate,z}` |
 | Front ToF | `tof_front_{h_samples,v_samples,hfov_deg,vfov_deg,min,max,update_rate}` |
 | Stereo cameras | `camera_{width,height,hfov_deg,baseline,near,far,update_rate}` |
+| IMU | `imu_{x,y,z,update_rate,gyro_noise,accel_noise}` |
 
 Related files: `urdf/robot.urdf.xacro` (links/joints), `urdf/plugins.xacro` (gz plugins +
 sensors), `urdf/inertial.xacro` (mass/inertia macros), `urdf/materials.xacro` (colors).

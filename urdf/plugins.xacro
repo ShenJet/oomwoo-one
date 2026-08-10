@@ -267,4 +267,36 @@
 
   <xacro:camera_plugin side="left"/>
   <xacro:camera_plugin side="right"/>
+
+  <!-- IMU: 6-axis (gyro + accelerometer) at imu_link, near the body center. gz
+       publishes gz.msgs.IMU on <topic>, bridged to sensor_msgs/Imu. Orientation
+       is DISABLED so /imu carries angular velocity + linear acceleration only,
+       like the physical robot's IMU (the EKF fuses the yaw rate, config/ekf.yaml).
+       The sim leaves the orientation field unset (a zero quaternion); the hardware
+       bridge instead flags "no orientation" with orientation_covariance[0] = -1.
+       Like the contact sensors, this needs the world to load the world-level
+       gz-sim-imu-system; oomwoo_gazebo living_room.world and oomwoo_sim_support
+       test_room.world both do (an IMU-less world leaves /imu silent). -->
+  <gazebo reference="imu_link">
+    <sensor name="imu" type="imu">
+      <pose relative_to="imu_link">0 0 0 0 0 0</pose>
+      <update_rate>${imu_update_rate}</update_rate>
+      <topic>imu</topic>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <imu>
+        <enable_orientation>false</enable_orientation>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>${imu_gyro_noise}</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>${imu_gyro_noise}</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>${imu_gyro_noise}</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>${imu_accel_noise}</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>${imu_accel_noise}</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>${imu_accel_noise}</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
+      <always_on>1</always_on>
+    </sensor>
+  </gazebo>
 </robot>
