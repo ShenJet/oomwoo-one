@@ -7,18 +7,6 @@ Panels:
     - /TF1/Frames1
     Splitter Ratio: 0.5
   Tree Height: 630
-- Class: rviz_common/Selection
-  Name: Selection
-- Class: rviz_common/Tool Properties
-  Expanded:
-  - /Publish Point1
-  Name: Tool Properties
-  Splitter Ratio: 0.5886790156364441
-- Class: rviz_common/Views
-  Expanded:
-  - /Current View1
-  Name: Views
-  Splitter Ratio: 0.5
 Visualization Manager:
   Class: ''
   Displays:
@@ -416,7 +404,7 @@ Visualization Manager:
         Scale: 1
         Value: false
       Value: false
-    Enabled: false
+    Enabled: true
     Keep: 1
     Name: Odometry
     Position Tolerance: 0.10000000149011612
@@ -437,7 +425,7 @@ Visualization Manager:
       History Policy: Keep Last
       Reliability Policy: Reliable
       Value: /odom
-    Value: false
+    Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -476,7 +464,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/TopDownOrtho
-      Angle: 1.5707963267948966
+      Angle: -1.5707963267948966
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -497,12 +485,6 @@ Window Geometry:
   Height: 845
   Hide Left Dock: false
   Hide Right Dock: true
-  Selection:
-    collapsed: false
-  Tool Properties:
-    collapsed: false
-  Views:
-    collapsed: true
   Width: 1355
   X: 412
   Y: 31
