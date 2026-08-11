@@ -17,6 +17,19 @@
        set odom_source:=wheel at spawn time (e.g. world.launch.py) to swap. -->
   <xacro:arg name="odom_source" default="truth"/>
 
+  <!-- Per-sensor on/off switches (default all on). The RENDERING sensors (the
+       cameras and the front ToF most of all, then the two side ranges and the
+       LiDAR) are what slow Gazebo down; turn the ones you don't need off at spawn
+       time to speed the sim up (e.g. world.launch.py enable_cameras:=false
+       enable_tof:=false). The sensor LINKS stay in the model (TF/visuals intact);
+       only the gz sensor (the render cost) is dropped. Contacts, odom, diff drive
+       and joint states are always on (cheap). -->
+  <xacro:arg name="enable_lidar" default="true"/>
+  <xacro:arg name="enable_ranges" default="true"/>
+  <xacro:arg name="enable_tof" default="true"/>
+  <xacro:arg name="enable_cameras" default="true"/>
+  <xacro:arg name="enable_imu" default="true"/>
+
   <gazebo>
     <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
       <left_joint>wheel_left_joint</left_joint>
@@ -118,6 +131,7 @@
   </gazebo>
 
   <!-- gazebo reference="laser_frame" -->
+  <xacro:if value="${'$(arg enable_lidar)' == 'true'}">
   <gazebo reference="base_scan">
     <sensor name="laser_scan_sensor" type="gpu_lidar">
     <!-- sensor type="ray" name="laser_scan_sensor" -->
@@ -149,6 +163,7 @@
       <visualize>true</visualize>
     </sensor>
   </gazebo>
+  </xacro:if>
 
   <!-- Left/right side distance sensors: a single ray straight out to the side,
        modelling a short-range IR/ToF wall sensor. gz-sim publishes gz.msgs.LaserScan
@@ -191,13 +206,16 @@
     </gazebo>
   </xacro:macro>
 
-  <xacro:side_range_plugin prefix="range_left" side_sign="1"/>
-  <xacro:side_range_plugin prefix="range_right" side_sign="-1"/>
+  <xacro:if value="${'$(arg enable_ranges)' == 'true'}">
+    <xacro:side_range_plugin prefix="range_left" side_sign="1"/>
+    <xacro:side_range_plugin prefix="range_right" side_sign="-1"/>
+  </xacro:if>
 
   <!-- Front multizone ToF depth sensor: a 16 (= 8 + 8) x 8 gpu_lidar ray grid over
        120 deg H x 60 deg V, front & center, modelling two VL53L7CX (each 8x8, 60
        deg) aimed +/-30 deg. gz publishes a gz.msgs.PointCloudPacked on tof_front/
        points, which config/gz_bridge.yaml bridges to sensor_msgs/PointCloud2. -->
+  <xacro:if value="${'$(arg enable_tof)' == 'true'}">
   <gazebo reference="tof_front_link">
     <sensor name="tof_front" type="gpu_lidar">
       <pose relative_to="tof_front_link">0 0 0 0 0 0</pose>
@@ -234,6 +252,7 @@
       <visualize>true</visualize>
     </sensor>
   </gazebo>
+  </xacro:if>
 
   <!-- One front RGB camera (OV5647-equivalent), VGA, wide FoV. gz publishes
        gz.msgs.Image on <topic> and gz.msgs.CameraInfo on the sibling camera_info
@@ -265,8 +284,10 @@
     </gazebo>
   </xacro:macro>
 
-  <xacro:camera_plugin side="left"/>
-  <xacro:camera_plugin side="right"/>
+  <xacro:if value="${'$(arg enable_cameras)' == 'true'}">
+    <xacro:camera_plugin side="left"/>
+    <xacro:camera_plugin side="right"/>
+  </xacro:if>
 
   <!-- IMU: 6-axis (gyro + accelerometer) at imu_link, near the body center. gz
        publishes gz.msgs.IMU on <topic>, bridged to sensor_msgs/Imu. Orientation
@@ -277,6 +298,7 @@
        Like the contact sensors, this needs the world to load the world-level
        gz-sim-imu-system; oomwoo_gazebo living_room.world and oomwoo_sim_support
        test_room.world both do (an IMU-less world leaves /imu silent). -->
+  <xacro:if value="${'$(arg enable_imu)' == 'true'}">
   <gazebo reference="imu_link">
     <sensor name="imu" type="imu">
       <pose relative_to="imu_link">0 0 0 0 0 0</pose>
@@ -299,4 +321,5 @@
       <always_on>1</always_on>
     </sensor>
   </gazebo>
+  </xacro:if>
 </robot>
