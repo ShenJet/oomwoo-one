@@ -27,7 +27,7 @@
   <xacro:arg name="enable_lidar" default="true"/>
   <xacro:arg name="enable_ranges" default="true"/>
   <xacro:arg name="enable_tof" default="true"/>
-  <xacro:arg name="enable_cameras" default="true"/>
+  <xacro:arg name="enable_cameras" default="false"/>
   <xacro:arg name="enable_imu" default="true"/>
 
   <gazebo>
