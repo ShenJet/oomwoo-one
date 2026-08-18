@@ -6,16 +6,17 @@
   <!-- BOTH odom sources are always published, so a later node can diff them to
        measure wheel slip. odom_source only picks which one owns the CANONICAL
        /odom + /tf (odom to base_footprint) that the stack uses:
-         * truth (default): ground truth owns /odom + /tf; wheel odom is on
-           /odom_wheel.
-         * wheel: wheel odom owns /odom + /tf; ground truth is on /odom_truth.
+         * ground_truth (default): ground truth owns /odom + /tf; wheel odom is
+           on /odom_wheel.
+         * robot_wheels: wheel odom owns /odom + /tf; ground truth is on
+           /odom_truth.
        Ground truth is the true model pose (slip free: a slipping or blocked wheel
        does NOT move it). Wheel odometry is integrated from the actual wheel joint
        rotation like real encoders, so slip shows up as drift. The non-canonical
        source always lands on a fixed /odom_wheel or /odom_truth topic. Default
-       (truth) keeps /odom + /tf identical to before, so nothing downstream breaks;
-       set odom_source:=wheel at spawn time (e.g. world.launch.py) to swap. -->
-  <xacro:arg name="odom_source" default="truth"/>
+       (ground_truth) keeps /odom + /tf identical to before, so nothing downstream
+       breaks; set odom_source:=robot_wheels at spawn time (world.launch.py). -->
+  <xacro:arg name="odom_source" default="ground_truth"/>
 
   <!-- Per-sensor on/off switches (default all on). The RENDERING sensors (the
        cameras and the front ToF most of all, then the two side ranges and the
@@ -44,11 +45,11 @@
       <frame_id>odom</frame_id>
       <child_frame_id>base_footprint</child_frame_id>
       <odom_publish_frequency>50</odom_publish_frequency>
-      <xacro:if value="${'$(arg odom_source)' == 'wheel'}">
+      <xacro:if value="${'$(arg odom_source)' == 'robot_wheels'}">
         <odom_topic>/odom</odom_topic>
         <tf_topic>/tf</tf_topic>
       </xacro:if>
-      <xacro:unless value="${'$(arg odom_source)' == 'wheel'}">
+      <xacro:unless value="${'$(arg odom_source)' == 'robot_wheels'}">
         <odom_topic>/odom_wheel</odom_topic>
       </xacro:unless>
     </plugin>
@@ -61,11 +62,11 @@
       <robot_base_frame>base_footprint</robot_base_frame>
       <odom_publish_frequency>50</odom_publish_frequency>
       <dimensions>2</dimensions>
-      <xacro:if value="${'$(arg odom_source)' == 'wheel'}">
+      <xacro:if value="${'$(arg odom_source)' == 'robot_wheels'}">
         <odom_topic>/odom_truth</odom_topic>
         <tf_topic>tf_truth</tf_topic>
       </xacro:if>
-      <xacro:unless value="${'$(arg odom_source)' == 'wheel'}">
+      <xacro:unless value="${'$(arg odom_source)' == 'robot_wheels'}">
         <odom_topic>/odom</odom_topic>
         <tf_topic>/tf</tf_topic>
       </xacro:unless>
